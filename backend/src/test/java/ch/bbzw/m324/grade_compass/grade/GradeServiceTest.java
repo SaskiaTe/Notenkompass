@@ -1,6 +1,8 @@
 package ch.bbzw.m324.grade_compass.grade;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -60,5 +62,26 @@ class GradeServiceTest {
         when(repository.findAll()).thenReturn(List.of());
 
         assertThat(service.findAll()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(doubles = {1.0, 6.0})
+    void create_validBoundaryValues_savesGrade(double value) {
+        when(repository.save(any(Grade.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        GradeResponse response = service.create(new CreateGradeRequest(1L, value));
+
+        assertThat(response.value()).isEqualTo(value);
+        verify(repository).save(any(Grade.class));
+    }
+
+    @ParameterizedTest
+    @ValueSource(doubles = {0.99, 6.01})
+    void create_invalidBoundaryValues_throwsBadRequestAndDoesNotSave(double value) {
+        assertThatThrownBy(() -> service.create(new CreateGradeRequest(1L, value)))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+
+        verify(repository, never()).save(any());
     }
 }
