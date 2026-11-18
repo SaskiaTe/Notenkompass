@@ -14,6 +14,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,5 +90,26 @@ class SubjectServiceTest {
         when(repository.findAll()).thenReturn(List.of());
 
         assertThat(service.findAll()).isEmpty();
+    }
+
+    @Test
+    void delete_existingId_deletesSubject() {
+        when(repository.existsById(1L)).thenReturn(true);
+
+        service.delete(1L);
+
+        verify(repository).deleteById(1L);
+    }
+
+    @Test
+    void delete_unknownId_throwsNotFoundAndDoesNotDelete() {
+        when(repository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.delete(99L))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND))
+                .hasMessageContaining("99");
+
+        verify(repository, never()).deleteById(anyLong());
     }
 }
