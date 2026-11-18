@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -111,5 +112,52 @@ class SubjectServiceTest {
                 .hasMessageContaining("99");
 
         verify(repository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void update_changesNameAndTrimsWhitespace() {
+        Long id = 1L;
+        Subject subject = new Subject("Mathe");
+
+        when(repository.findById(id)).thenReturn(Optional.of(subject));
+        when(repository.existsByNameIgnoreCaseAndIdNot("Mathematik", id)).thenReturn(false);
+        when(repository.save(any(Subject.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SubjectResponse response = service.update(id, new CreateSubjectRequest("  Mathematik  "));
+
+        assertThat(response.name()).isEqualTo("Mathematik");
+        assertThat(subject.getName()).isEqualTo("Mathematik");
+
+        verify(repository).save(subject);
+    }
+
+    @Test
+    void update_subjectNotFound_throwsNotFoundAndDoesNotSave() {
+        Long id = 99L;
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(id, new CreateSubjectRequest("Mathematik")))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND))
+                .hasMessageContaining("Subject not found");
+
+        verify(repository, never()).save(any(Subject.class));
+    }
+
+    @Test
+    void update_duplicateName_throwsConflictAndDoesNotSave() {
+        Long id = 1L;
+        Subject subject = new Subject("Mathe");
+
+        when(repository.findById(id)).thenReturn(Optional.of(subject));
+        when(repository.existsByNameIgnoreCaseAndIdNot("Deutsch", id)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.update(id, new CreateSubjectRequest("Deutsch")))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT))
+                .hasMessageContaining("Deutsch");
+
+        verify(repository, never()).save(any(Subject.class));
     }
 }
