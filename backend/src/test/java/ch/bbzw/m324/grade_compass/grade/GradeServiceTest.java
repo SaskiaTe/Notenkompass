@@ -49,19 +49,25 @@ class GradeServiceTest {
     }
 
     @Test
-    void findAll_mapsEntitiesToResponses() {
-        when(repository.findAll()).thenReturn(List.of(new Grade(1L, 4.0), new Grade(2L, 5.5)));
+    void create_roundsGradeToTwoDecimalPlaces() {
+        when(repository.save(any(Grade.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        List<GradeResponse> result = service.findAll();
+        GradeResponse response = service.create(new CreateGradeRequest(1L, 5.567));
 
-        assertThat(result).extracting(GradeResponse::value).containsExactly(4.0, 5.5);
+        assertThat(response.value()).isEqualTo(5.57);
+        verify(repository).save(any(Grade.class));
     }
 
     @Test
-    void findAll_returnsEmptyListWhenNoGradesExist() {
-        when(repository.findAll()).thenReturn(List.of());
+    void create_repositoryThrowsException_propagatesException() {
+        when(repository.save(any(Grade.class)))
+                .thenThrow(new RuntimeException("Database connection failed"));
 
-        assertThat(service.findAll()).isEmpty();
+        assertThatThrownBy(() ->
+                service.create(new CreateGradeRequest(1L, 5.5)))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Database connection failed");
+        verify(repository).save(any(Grade.class));
     }
 
     @ParameterizedTest
@@ -83,5 +89,21 @@ class GradeServiceTest {
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
 
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void findAll_mapsEntitiesToResponses() {
+        when(repository.findAll()).thenReturn(List.of(new Grade(1L, 4.0), new Grade(2L, 5.5)));
+
+        List<GradeResponse> result = service.findAll();
+
+        assertThat(result).extracting(GradeResponse::value).containsExactly(4.0, 5.5);
+    }
+
+    @Test
+    void findAll_returnsEmptyListWhenNoGradesExist() {
+        when(repository.findAll()).thenReturn(List.of());
+
+        assertThat(service.findAll()).isEmpty();
     }
 }
