@@ -48,9 +48,9 @@ public class GradeService {
         return result;
     }
 
-    // public double average(List<GradeResponse> grades) {
-    //     double sum = 0;
-    //     for (GradeResponse g : grades) sum += g.value();
-    //     return sum / grades.size();
-    // }
+    public double average(List<GradeResponse> grades) {
+        double sum = 0;
+        for (GradeResponse g : grades) sum += g.value();
+        return sum / grades.size();
+    }
 }
