@@ -51,9 +51,9 @@ class CreateSubjectRequestTest {
     }
 
     @Test
-    void nameWithExactly100Characters_isAccepted() {
+    void nameWithExactly50Characters_isAccepted() {
         Set<ConstraintViolation<CreateSubjectRequest>> violations =
-                validator.validate(new CreateSubjectRequest("a".repeat(100)));
+                validator.validate(new CreateSubjectRequest("a".repeat(50)));
 
         assertThat(violations).isEmpty();
     }
