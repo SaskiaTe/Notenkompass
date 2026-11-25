@@ -7,3 +7,15 @@ test:
 clean:
 	cd backend && mvn clean package
 
+.PHONY: docker
+
+docker:
+	docker build -t grade-compass-backend:latest backend
+
+
+.PHONY: docker-clean
+
+docker-clean:
+	docker rm -f notenkompass-backend || true
+	docker compose -f backend/compose.yaml down --rmi all
+	docker rmi grade-compass-backend:latest || true

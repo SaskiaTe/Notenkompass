@@ -10,6 +10,7 @@ import java.util.List;
 @RequestMapping("/api/subjects")
 public class SubjectController {
 
+    // Controller für die Verwaltung der Fächer
     private final SubjectService service;
 
     public SubjectController(SubjectService service) {
